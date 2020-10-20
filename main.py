@@ -1,5 +1,4 @@
 from simple2 import MQTTClient
-from machine import Pin
 import ubinascii
 import machine
 import micropython
@@ -27,12 +26,11 @@ topicDict = Utils.getTopicDict(config.deviceName)       #dictionary mapping topi
 callbackMap = getCallbackFunctions()
 
 #to store pin instances and then a list of their states, also attaches a timer if one was created
-pins, IOlist, timerValue = Utils.getPinList()           #reads from the pin.txt file and reloads last state for each pin
+pins, IOlist, timerValue, SPISetup = Utils.getPinList()           #reads from the pin.txt file and reloads last state for each pin
 
 timer = None
 timerFunction = False       #stores the CB method for timer
 
-SPISetup = None             #stores SPI class instance
 
 #timerValue in the form functionName for CB, pinNum
 if timerValue is not None:
@@ -208,7 +206,13 @@ def digitalReadCB(pinNum):
     #update broker
 
 
+def SPIReadCB(byteSize):
+    global SPISetup
 
+    functions.SPIRead(0,0,0,byteSize,SPISetup)
+
+    #update pins file
+    #update broker
 
 #assume pin is already initialized
 #redirect to callback above

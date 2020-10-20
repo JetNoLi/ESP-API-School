@@ -3,9 +3,6 @@ import functions
 import machine
 import config
 from main import interruptCB
-import config
-from main import interruptCB
-
 
 def connectToWifi(ssid, psk):
 
@@ -128,6 +125,7 @@ def getPinList():
     timer = None
     functionDict = getFunctionMapDict()
     functionList = getFunctionNames()
+    SPISetup = None
 
     with open("pins.txt","r") as pinFile:
         pinRead = pinFile.readlines()
@@ -142,7 +140,13 @@ def getPinList():
                 else:
                     pinData = pinData.split("_")
                     timer = pinData
-                                    
+
+            elif (count + 1) in config.SPIPins: #if an SPI Pin
+                if (count + 1) == config.SPIPins[-1]:
+                    pinData = pinData.split("_")
+                    SPISetup = functions.SetupSPI(int(pinData[0]),int(pinData[1]), int(pinData[2]))
+
+
             elif pinData == "":                 #unitialized pin
                 pins.append("")
                 IOlist.append("")
@@ -200,7 +204,7 @@ def getPinList():
 
             count += 1
 
-    return pins, IOlist, timer
+    return pins, IOlist, timer, SPISetup
     
                 
 
@@ -228,7 +232,7 @@ def writeToPinFile(pin,pinLine):
 def getPinLine(pins, message, topic, topics):
     pinLine = ""
 
-    if "_" in message:          #listen or timer
+    if "_" in message:          #listen or timer or SPIRead
         message = message.split("_")
         pinNum = message[0]
         
@@ -238,6 +242,10 @@ def getPinLine(pins, message, topic, topics):
             function = message[2]
             pinLine = "listen_"+ edge + "_" + function
         
+        #SPIRead - baudRate, CPOL, CPHA
+        elif topic == str(topics[4]):
+            pinLine = "SPIRead_" + message[0] + "_" + message[1] + "_" + message[2] 
+
         #timedInterrupt - pin, function, time, defualt value
         else:
             function = message[1]
