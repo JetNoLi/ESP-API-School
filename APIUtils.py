@@ -142,12 +142,16 @@ def getPinList():
                     timer = pinData
 
             elif (count + 1) in config.SPIPins: #if an SPI Pin
+                IOlist.append("")
+                pins.append("")
+
                 if (count + 1) == config.SPIPins[-1]:
-                    pinData = pinData.split("_")
-                    SPISetup = functions.SetupSPI(int(pinData[0]),int(pinData[1]), int(pinData[2]))
+                        pinData = pinData.split("_")
+                        SPISetup = functions.SetupSPI(int(pinData[0]),int(pinData[1]), int(pinData[2]))
 
 
-            elif pinData == "":                 #unitialized pin
+
+            elif pinData == "" or pinData == "\n":                 #unitialized pin
                 pins.append("")
                 IOlist.append("")
 
