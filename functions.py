@@ -1,4 +1,5 @@
 import machine
+import APIUtils as Utils
 
 #Note all functions will be called from main, i.e will be able to input the function in the
 #callback thus no need to map to a function
@@ -49,7 +50,8 @@ def timedInterrupt(pinNum, function, time, timerFunction):
 #end the timer i.e. deinitialize it
 def endTimedInterrupt(timer):
     timer.deinit()
-    #handle in main
+    timer = None
+    #handle in main, update IOlist, timerFunction, pins final index stores timer Pin Number
 
 
 
@@ -64,9 +66,36 @@ def ADC(pin):
 
 
 
-#Note digital read will keep state device by use of text file mapping pin use
-#def digital read
-#digital read to save memory will be implemented directly in the callback code
-    
+def digitalRead(pin):
+    return pin.value()
 
+
+#default pins MISO - GPIO12, MOSI - GPIO13, SCLK - GPIO14
+#Returns an instance of the SPI class which will be loaded in the main
+def SetupSPI(baudRate, CPOL, CPHA): 
+    return machine.SPI(1, baudrate = baudRate, polarity = CPOL, phase = CPHA)
+
+
+
+#Byte size is the number of bytes to read
+#SPISetup is loaded in from main, and will store an instance of the machine.SPI
+def SPIReadValue(byteSize, SPISetup):
+    buffer = bytearray(byteSize)    #stores bits read in as they have to be in bytes format
+    SPISetup.readinto(buffer)
+
+    return Utils.formatSPIBytes(buffer)
+
+
+#Create SPIRead if necessary, write to scheduled SPI pins in pin File
+#To just read use format (0,0,0, byteSize, SPISetup)
+#cannot set SPI from callback, only read from it 
+def SPIRead(baudRate, CPOL, CPHA, byteSize, SPISetup):
+    if SPISetup == None:
+        SPISetup = SetupSPI(baudRate,CPOL,CPHA)
+    
+    return SPIReadValue(int(byteSize),SPISetup)
+
+
+       
+    
 

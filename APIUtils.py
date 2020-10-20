@@ -3,6 +3,8 @@ import functions
 import machine
 import config
 from main import interruptCB
+import config
+from main import interruptCB
 
 
 def connectToWifi(ssid, psk):
@@ -24,7 +26,7 @@ def connectToWifi(ssid, psk):
 
 #List of the names of the functions in API
 def getFunctionNames():
-    return ["switch", "ADC", "listen", "digitalRead","timedInterrupt"]
+    return ["switch", "ADC", "listen", "digitalRead","timedInterrupt", "SPIRead"]
 
 
 
@@ -46,7 +48,8 @@ def getFunctionMapDict():
             "ADC": functions.ADC,
             "listen" : functions.listen,
             "digitalRead" : functions.digitalRead,
-            "timedInterrupt" : functions.timedInterrupt
+            "timedInterrupt" : functions.timedInterrupt,
+            "SPIRead" : functions.SPIRead
             }
 
 
@@ -256,18 +259,22 @@ def getPinLine(pins, message, topic, topics):
         
         #digitalRead
         if topic == str(topics[1]):
-            pinLine = ""
+            pinLine = "digitalRead"
 
     return pinLine       
 
 
+
+#takes in byte value from sensor
+#is the callback method to format SPI data to what you would like
+def formatSPIBytes(byteArray):
+    pass
 
 
 #when a device is first used it will need to register with thebroker
 def addToDB(IP, port):
     #register device to Broker i.e. send message to notify Pi to update DB, hence send on topic only Pi, is subscribed to 
     pass
-
 
 
 #method which takes in the message recieved and the topic it was called on to

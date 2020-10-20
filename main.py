@@ -32,6 +32,8 @@ pins, IOlist, timerValue = Utils.getPinList()           #reads from the pin.txt 
 timer = None
 timerFunction = False       #stores the CB method for timer
 
+SPISetup = None             #stores SPI class instance
+
 #timerValue in the form functionName for CB, pinNum
 if timerValue is not None:
     #must still map callback to pin and init pin
@@ -41,7 +43,6 @@ if timerValue is not None:
     timerFunction = callbackMap[func]
 
 
-
 #THIS IS WHAT HAPPENS WHEN STATE CHANGES CHANGE HERE TO IMPLEMENT FUNCTIONALITY
 def sub_cb(topic, msg, r, d):
     global pins
@@ -49,11 +50,9 @@ def sub_cb(topic, msg, r, d):
     global client
     global timer
     global timerFunction
+    global SPISetup
 
-    if "_" in msg:
-        data = msg.split("_")
-
-    function = topicDict[topic]  
+    function = topicDict[topic]             #get function from dictionary
 
     #switch function input param is the pin
     if topic == topics[0]:                  #switch
@@ -65,14 +64,14 @@ def sub_cb(topic, msg, r, d):
         #reconfigure pins to output and set to high, as the first switch will always be an on
         else:
             pins[pinNum-1] = machine.Pin(pinNum, machine.Pin.OUT, value =1)
-            IOlist = "O"
+            IOlist[pinNum-1] = "O"
 
         #updateDB and pins.txt
 
             
     if topic == topics[1]:                  #ADC
         pinNum = int(str(msg))
-        value = -1
+        value = -1                          
 
         if IOlist[pinNum-1] == "A":
             value = function(pins[pinNum-1])        #execute ADC read statement
@@ -81,7 +80,7 @@ def sub_cb(topic, msg, r, d):
         else:
             pins[pinNum-1] = machine.ADC(pinNum)
             value = function(pins[pinNum-1])
-            IOlist = "A"
+            IOlist[pinNum-1] = "A"
 
     
     #updateDB and pins.txt
@@ -113,26 +112,40 @@ def sub_cb(topic, msg, r, d):
         #reconfigure pins to output and set to high, as the first switch will always be an on
         else:
             pins[pinNum-1] = machine.Pin(pinNum, machine.Pin.IN)
-            IOlist = "I"        
+            IOlist[pinNum -1] = "I"        
             value = function(pins[pinNum-1])
 
 
 
-    if topic == topics[4]:                  #timedInterrupt
-        message = msg.split("_")
-        pinNum = int(message[0])
+    if topic == topics[4]:                  #timedInterrupt add if message = deInit
+        if "_" in msg:
 
-        timer, pinNum, func = function(pinNum, message[1], message[2], timerCB)
+            message = msg.split("_")
+            pinNum = int(message[0])
 
-        pins[config.pinCount] = pinNum
-        timerFunction = callbackMap[func]
+            timer, pinNum, func = function(pinNum, message[1], message[2], timerCB)
+
+            pins[config.pinCount] = pinNum
+            timerFunction = callbackMap[func]
+
+        else:                               #deinit the timer
+            if msg == "endTimer":
+                functions.endTimedInterrupt(timer)
+                timerFunction = None
+                pins[config.pinCount] = ""
 
 
-    #update pinFile
+    #update pinFile and Broker
 
-    #update broker
-
-
+    if topic == topics[5]:                  #SPIRead
+        if len(msg) == 1:                   #no Setup
+            function(0,0,0,msg,SPISetup)
+        
+        else:
+            message = msg.split("_")
+            function(int(message[0]),int(message[1]), int(message[2]), message[3],SPISetup)
+    
+    #update PinFile and Broker
 
 
 #for callbacks, pins do not need to be instantiated before hand
@@ -162,7 +175,7 @@ def ADC_CB(pinNum):
     global pins
     global client
     
-    voltage =0
+    voltage = -1
 
     if IOlist[pinNum-1] == "A":
         value = pins[pinNum-1].read()
@@ -182,7 +195,7 @@ def digitalReadCB(pinNum):
     global pins
     global client
 
-    value = 0
+    value = -1
 
     if IOlist[pinNum-1] == "I" or IOlist[pinNum-1] == "O": 
         value = pins[pinNum-1].value()
@@ -217,17 +230,6 @@ def getCallbackFunctions():
             "digitalReadCB": digitalReadCB,
             "timerCB" : timerCB
             }
-
-
-
-def listenMsg(client):
-    try:
-        while True:
-            client.wait_msg()
-            client.publish(b"Button", b"Button On")
-             
-    finally:
-        client.disconnect()     
 
 
 
