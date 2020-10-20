@@ -1,4 +1,6 @@
-import machine
+from machine import Pin
+from machine import Timer
+from machine import SPI
 import APIUtils as Utils
 
 #Note all functions will be called from main, i.e will be able to input the function in the
@@ -9,15 +11,15 @@ def listen(pin, edge, callback):
     
     #edge = 0 -> trigger on falling edge
     if edge == 0:
-        pin.irq(trigger = machine.Pin.IRQ_Falling, handler = callback)
+        pin.irq(trigger = Pin.IRQ_FALLING, handler = callback)
 
     #edge = 1 -> trigger on rising edge
     elif edge == 1:                                          
-        pin.irq(trigger = machine.Pin.IRQ_Rising, handler = callback)
+        pin.irq(trigger = Pin.IRQ_RISING, handler = callback)
 
     #edge = 10 -> trigger on either a rising or falling edge
     elif edge == 10:
-        pin.irq(trigger = machine.Pin.IRQ_Falling | machine.Pin.IRQ_Rising, handler = callback) 
+        pin.irq(trigger = Pin.IRQ_FALLING | Pin.IRQ_RISING, handler = callback) 
 
     else:
         print("Error: Incorrect input paramaters, edge must = 0, 1, 10")
@@ -41,7 +43,7 @@ def switch(pin):
 def timedInterrupt(pinNum, function, time, timerFunction):
     timer = machine.Timer(-1)           #initialize with ID of -1 as in docs
 
-    timer.init(mode = machine.TIMER.PERIODIC, period = time, callback = timerFunction )
+    timer.init(mode = Timer.PERIODIC, period = time, callback = timerFunction)
 
     return timer, pinNum, function
 
@@ -73,7 +75,7 @@ def digitalRead(pin):
 #default pins MISO - GPIO12, MOSI - GPIO13, SCLK - GPIO14
 #Returns an instance of the SPI class which will be loaded in the main
 def SetupSPI(baudRate, CPOL, CPHA): 
-    return machine.SPI(1, baudrate = baudRate, polarity = CPOL, phase = CPHA)
+    return SPI(1, baudrate = baudRate, polarity = CPOL, phase = CPHA)
 
 
 

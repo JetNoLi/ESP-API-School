@@ -1,17 +1,15 @@
 from simple2 import MQTTClient
 import ubinascii
+from machine import Pin
+from machine import ADC
 import machine
-import micropython
 import APIUtils as Utils
-import uasyncio
 import time
 import config
 import functions
 
 # Try to connect to Wifi - LED turns on and off
-led = machine.Pin(5, machine.Pin.OUT, value=1)
 Utils.connectToWifi(config.ssid,config.psk)
-led.off()
 
 # Config to connect to broker and handle API implementation
 broker = config.brokerIP
@@ -61,7 +59,7 @@ def sub_cb(topic, msg, r, d):
         
         #reconfigure pins to output and set to high, as the first switch will always be an on
         else:
-            pins[pinNum-1] = machine.Pin(pinNum, machine.Pin.OUT, value =1)
+            pins[pinNum-1] = Pin(pinNum, Pin.OUT, value =1)
             IOlist[pinNum-1] = "O"
 
         #updateDB and pins.txt
@@ -76,7 +74,7 @@ def sub_cb(topic, msg, r, d):
         
         #reconfigure pins to output and set to high, as the first switch will always be an on
         else:
-            pins[pinNum-1] = machine.ADC(pinNum)
+            pins[pinNum-1] = ADC(pinNum)
             value = function(pins[pinNum-1])
             IOlist[pinNum-1] = "A"
 

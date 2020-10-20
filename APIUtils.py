@@ -1,8 +1,11 @@
 import network
 import functions
-import machine
+from machine import Pin
+from machine import SPI
+from machine import Timer
+from machine import ADC
 import config
-from main import interruptCB
+#from main import interruptCB
 
 def connectToWifi(ssid, psk):
 
@@ -146,9 +149,9 @@ def getPinList():
                 pins.append("")
 
                 if (count + 1) == config.SPIPins[-1]:
+                    if "_" in pinData:
                         pinData = pinData.split("_")
                         SPISetup = functions.SetupSPI(int(pinData[0]),int(pinData[1]), int(pinData[2]))
-
 
 
             elif pinData == "" or pinData == "\n":                 #unitialized pin
@@ -182,12 +185,12 @@ def getPinList():
                     length = len(pinData)
                 
                     if length == 2: #switch
-                        pin = machine.Pin(count + 1, machine.Pin.OUT, value = int(pinData[1]))                #count + 1 -> pinNum
+                        pin = Pin(count + 1, Pin.OUT, value = int(pinData[1]))                #count + 1 -> pinNum
                         pins.append(pin)
                         IOlist.append("O")
 
                     else:           #interruput
-                        pin = machine.Pin(count + 1, machine.Pin)
+                        pin = Pin(count + 1, Pin.In)
 
                         #so if this doesnt trigger
                         #will return an interrupt list of input pins, ready to be handled
@@ -195,13 +198,13 @@ def getPinList():
 
                         if pinData[1] == "1":      #was written to file so in string format 
                             
-                            pin.irq(trigger = machine.Pin.IRQ_RISING, handler = interruptCB)
+                            pin.irq(trigger = Pin.IRQ_RISING, handler = interruptCB)
 
                         if pinData[1] == "0":
-                            pin.irq(trigger = machine.Pin.IRQ_FALLING, handler = interruptCB)
+                            pin.irq(trigger = Pin.IRQ_FALLING, handler = interruptCB)
 
                         else:
-                            pin.irq(trigger = machine.Pin.IRQ_RISNING | machine.Pin.IRQ_FALLING, handler =interruptCB)
+                            pin.irq(trigger = Pin.IRQ_RISNING | Pin.IRQ_FALLING, handler =interruptCB)
                     
                         pins.append(pin)
                         IOlist.append("i")
@@ -293,3 +296,7 @@ def addToDB(IP, port):
 #returns the topic and the message to send to the broker
 def updateDB(client, message, topic):
     pass
+
+
+def interruptCB(pinNum):
+    print("button pushed")
