@@ -72,14 +72,15 @@ def sub_cb(topic, msg, r, d):
             
     if topic == topics[1]:                  #ADC
         pinNum = int(str(msg))
+        value = -1
 
         if IOlist[pinNum-1] == "A":
-            function(pins[pinNum-1])        #execute switch statement
+            value = function(pins[pinNum-1])        #execute ADC read statement
         
         #reconfigure pins to output and set to high, as the first switch will always be an on
         else:
             pins[pinNum-1] = machine.ADC(pinNum)
-            function(pins[pinNum-1])
+            value = function(pins[pinNum-1])
             IOlist = "A"
 
     
@@ -104,14 +105,16 @@ def sub_cb(topic, msg, r, d):
 
     if topic == topics[3]:                  #digitalRead
         pinNum = int(str(msg))
+        value = -1
 
         if IOlist[pinNum-1] == "I":
-            function(pins[pinNum-1])        #execute read
+            value = function(pins[pinNum-1])        #execute read
         
         #reconfigure pins to output and set to high, as the first switch will always be an on
         else:
             pins[pinNum-1] = machine.Pin(pinNum, machine.Pin.IN)
             IOlist = "I"        
+            value = function(pins[pinNum-1])
 
 
 
@@ -128,7 +131,6 @@ def sub_cb(topic, msg, r, d):
     #update pinFile
 
     #update broker
-
 
 
 

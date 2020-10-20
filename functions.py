@@ -45,6 +45,7 @@ def timedInterrupt(pinNum, function, time, timerFunction):
     return timer, pinNum, function
 
 
+
 #end the timer i.e. deinitialize it
 def endTimedInterrupt(timer):
     timer.deinit()
