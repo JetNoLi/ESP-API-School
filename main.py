@@ -9,7 +9,7 @@ import config
 import functions
 
 # Try to connect to Wifi - LED turns on and off
-led = Pin(5, Pin.OUT, value=1)
+led = machine.Pin(5, machine.Pin.OUT, value=1)
 Utils.connectToWifi(config.ssid,config.psk)
 led.off()
 
@@ -213,6 +213,7 @@ def SPIReadCB(byteSize):
 
     #update pins file
     #update broker
+
 
 #assume pin is already initialized
 #redirect to callback above
