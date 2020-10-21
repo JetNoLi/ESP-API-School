@@ -1,3 +1,4 @@
+import test
 import ubinascii
 from machine import Pin
 from machine import ADC
@@ -144,25 +145,29 @@ def sub_cb(topic, msg, r, d):
 
     function = topicDict[topic]             #get function from dictionary
     value = -1
+    msg = msg.decode('utf-8')
+    pinNum = 0
 
     #switch function input param is the pin
     if topic == topics[0]:                  #switch
-        print(msg)
+        #print(msg)
         pinNum = int(msg)
 
         if IOlist[pinNum-1] == "O":
             function(pins[pinNum-1])        #execute switch statement
+            value = pins[pinNum-1].value()
         
         #reconfigure pins to output and set to high, as the first switch will always be an on
         else:
             pins[pinNum-1] = Pin(pinNum, Pin.OUT, value =1)
             IOlist[pinNum-1] = "O"
+            value = 1
 
         #updateDB and pins.txt
 
             
     if topic == topics[1]:                  #ADC
-        pinNum = int(str(msg))                       
+        pinNum = int(msg)                   
 
         if IOlist[pinNum-1] == "A":
             value = function(pins[pinNum-1])        #execute ADC read statement
@@ -177,9 +182,7 @@ def sub_cb(topic, msg, r, d):
     #updateDB and pins.txt
 
     if topic == topics[2]:                  #listen
-        message = msg.decode('utf-8')
         message = message.split("_")
-        print(message[0])
         pinNum = int(message[0])
 
         if IOlist[pinNum -1] == "I" or IOlist[pinNum-1] == "i":
@@ -207,12 +210,11 @@ def sub_cb(topic, msg, r, d):
             IOlist[pinNum -1] = "I"        
             value = function(pins[pinNum-1])
             
-        print(value)                #TRACING
+        #print(value)                #TRACING
 
 
     if topic == topics[4]:                  #timedInterrupt add if message = deInit
         if "_" in msg:
-
             message = msg.split("_")
             pinNum = int(message[0])
 
@@ -221,17 +223,22 @@ def sub_cb(topic, msg, r, d):
             pins[config.pinCount] = pinNum
             timerFunction = callbackMap[func]
 
+            #for pinWrite
+            pinNum = config.pinCount + 1
+
         else:                               #deinit the timer
             if msg == "endTimer":
                 functions.endTimedInterrupt(timer)
                 timerFunction = None
                 pins[config.pinCount] = ""
+                pinNum = config.pinCount + 1
 
 
     #update pinFile and Broker
 
     if topic == topics[5]:                  #SPIRead
-        if len(msg) == 1:                   #no Setup
+        pinNum = "SPI"
+        if "_" not in msg:                   #no Setup
             function(0,0,0,msg,SPISetup)
         
         else:
@@ -239,9 +246,8 @@ def sub_cb(topic, msg, r, d):
             function(int(message[0]),int(message[1]), int(message[2]), message[3],SPISetup)
     
 
-    #ToDo
-    #Utils.updateBroker(client,message,topic,value)
-    #Utils.writeToPinFile()
+    Utils.writeToPinFile(pinNum,Utils.getPinLine(message,topic,topics,value))
+    Utils.updateBroker(client,message,value, topic, topics)
 
 
 
@@ -256,7 +262,10 @@ def main(server=broker):
     #connect to broker
     client.connect()
 
-    #client.subscribe(TOPIC)
+    #checks if the user has registered the device and does so if necessary
+    Utils.registerDevice(client)    
+
+    #Subscribe to automatically generated topics for deviceName
     Utils.clientSubscribe(client, config.deviceName)
     print("Subscribed")
 

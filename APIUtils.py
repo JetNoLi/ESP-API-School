@@ -1,3 +1,4 @@
+#import test
 import network
 import functions
 from machine import Pin
@@ -63,6 +64,7 @@ def getTopicDict(deviceName):
         topics[2] : functions.listen,
         topics[3] : functions.digitalRead,
         topics[4] : functions.timedInterrupt,
+        topics[5] : functions.SPIRead
     }
 
     return topicDict
@@ -174,7 +176,9 @@ def getPinList():
 
             #could be a switch call in which case, just set to prior value as an output device
             #could be a listen call in which case schedule interrupt on pin
+            
             else:
+                from main import interruptCB
                 if "_" in pinData:
                     pinData = pinData.split("_")                 #functionName_param1_param2...value
 
@@ -224,7 +228,11 @@ def writeToPinFile(pin,pinLine):
         pinRead = pinFile.readlines()
 
         for i in range(len(pinRead)):
-            if i == pin - 1:                    #if line corresponds to pin, -1 to account for index
+            if pin == "SPI":
+                if i in config.SPIPins:
+                    pinLines.append(pinLine)
+
+            elif i == pin - 1:                    #if line corresponds to pin, -1 to account for index
                 pinLines.append(pinLine)        #edit line
             
             else:
@@ -236,7 +244,7 @@ def writeToPinFile(pin,pinLine):
 
 
 #given the message and topic will generate the string to update the pinFile with i.e. pinLine
-def getPinLine(pins, message, topic, topics):
+def getPinLine(message, topic, topics, value):
     pinLine = ""
 
     if "_" in message:          #listen or timer or SPIRead
@@ -244,17 +252,17 @@ def getPinLine(pins, message, topic, topics):
         pinNum = message[0]
         
         #listen - pin, edge, callback
-        if topic == str(topics[2]):  
+        if topic == topics[2]:  
             edge = message[1]
             function = message[2]
             pinLine = "listen_"+ edge + "_" + function
         
         #SPIRead - baudRate, CPOL, CPHA
-        elif topic == str(topics[4]):
+        elif topic == topics[5]:
             pinLine = "SPIRead_" + message[0] + "_" + message[1] + "_" + message[2] 
 
         #timedInterrupt - pin, function, time, defualt value
-        else:
+        elif topic == topics[4]:
             function = message[1]
             time = message[2]
             pinLine = function + "_" + pinNum + "_" + time
@@ -265,8 +273,7 @@ def getPinLine(pins, message, topic, topics):
         #switch
         if topic == str(topics[0]):     #convert to string as topic may be in bytes format
             #get pin value
-            pinValue = pins[int(pinNum)-1].value()
-            pinLine = "switch_" + str(pinValue)
+            pinLine = "switch_" + str(value)
         
         #ADC
         if topic == str(topics[1]):
@@ -314,9 +321,39 @@ def registerDevice(client):
 
 #method which takes in the message recieved and the topic it was called on to
 #returns the topic and the message to send to the broker
-def updateDB(client, message, topic):
-    pass
+def updateDB(client, message, value,topic, topics):
+    updateMessage = ""
 
+    if topic == topics[0]:          #switch
+        #message = pinNum
+        updateMessage = config.deviceName + "_switch_" + message + "_" + value
+    
+    if topic == topics[1]:          #ADC
+        #message = pinNum
+        updateMessage = config.deviceName + "_ADC_" + message + "_" + value
+    
+    if topic == topics[2]:          #listen
+        #message = pinNum, edge, listenCB | note value = edge
+        updateMessage = config.deviceName + "_listen_" + message[0] + "_" + message[1]
+    
+    if topic == topics[3]:          #digitalRead
+        #message = pinNum
+        updateMessage = config.deviceName + "_digitalRead_" + message + "_" + value
 
-def interruptCB(pinNum):
-    print("button pushed")
+    if topic == topics[4]:          #timer - note negative one to indicate not attached to a pin
+        if message == "endTimer":
+            updateMessage = config.deviceName + "_timedInterrupt_ended"
+        
+        else:
+            #message[2] = time in milliseconds for timer to schedule interrupt
+            updateMessage = config.deviceName + "_timedInterrupt_-1_" + message[2]
+    
+    if topic == topics[5]:
+        if "_" not in message:                   
+            updateMessage = config.deviceName + "_SPIRead_" + message + value
+        
+        else:
+            updateMessage = config.deviceName + "_SPIRead_" + message[0] + value
+            
+    client.publish(b"updateDB", bytes(updateMessage,'UTF-8'))
+
