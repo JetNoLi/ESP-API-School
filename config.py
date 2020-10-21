@@ -12,6 +12,7 @@ pinCount = 18
 SPIPins = [12,13,14] # list of dedicated SPI pins, -1 to account for index
 
 #API variables
+registered = 0
 
 
 

@@ -43,7 +43,7 @@ def ADC_CB(pinNum):
 
     else:
         IOlist[pinNum-1] = "A"
-        pins[pinNum-1] = machine.ADC(pinNum)
+        pins[pinNum-1] = ADC(pinNum)
         value = pins[pinNum-1].read()
         voltage = value/1023.0
     
@@ -61,7 +61,7 @@ def digitalReadCB(pinNum):
         value = pins[pinNum-1].value()
     
     else:
-        pins[pinNum-1] = machine.Pin(pinNum, machine.Pin.IN)
+        pins[pinNum-1] = Pin(pinNum, Pin.IN)
         value = pins[pinNum-1].value()
     
     #update pins file
@@ -143,6 +143,7 @@ def sub_cb(topic, msg, r, d):
     global SPISetup
 
     function = topicDict[topic]             #get function from dictionary
+    value = -1
 
     #switch function input param is the pin
     if topic == topics[0]:                  #switch
@@ -161,8 +162,7 @@ def sub_cb(topic, msg, r, d):
 
             
     if topic == topics[1]:                  #ADC
-        pinNum = int(str(msg))
-        value = -1                          
+        pinNum = int(str(msg))                       
 
         if IOlist[pinNum-1] == "A":
             value = function(pins[pinNum-1])        #execute ADC read statement
@@ -197,14 +197,13 @@ def sub_cb(topic, msg, r, d):
 
     if topic == topics[3]:                  #digitalRead
         pinNum = int(msg)
-        value = -1
 
-        if IOlist[pinNum-1] == "I":
+        if IOlist[pinNum-1] == "I" or IOlist[pinNum-1] == "O":
             value = function(pins[pinNum-1])        #execute read
         
         #reconfigure pins to output and set to high, as the first switch will always be an on
         else:
-            pins[pinNum-1] = machine.Pin(pinNum, machine.Pin.IN)
+            pins[pinNum-1] = Pin(pinNum, Pin.IN)
             IOlist[pinNum -1] = "I"        
             value = function(pins[pinNum-1])
             
@@ -239,10 +238,10 @@ def sub_cb(topic, msg, r, d):
             message = msg.split("_")
             function(int(message[0]),int(message[1]), int(message[2]), message[3],SPISetup)
     
-    #update PinFile and Broker
 
-
-
+    #ToDo
+    #Utils.updateBroker(client,message,topic,value)
+    #Utils.writeToPinFile()
 
 
 

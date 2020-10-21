@@ -287,9 +287,29 @@ def formatSPIBytes(byteArray):
 
 
 #when a device is first used it will need to register with thebroker
-def addToDB(IP, port):
-    #register device to Broker i.e. send message to notify Pi to update DB, hence send on topic only Pi, is subscribed to 
-    pass
+def registerDevice(client):
+    #register device to Broker i.e. send device name to Pi
+    #update registered varaible in config file if device unregistered
+    if config.registered == 0:
+        client.publish(b"registerDevice",bytes(config.deviceName,'UTF-8'))
+
+        configLines = []
+        with open("config.py","r") as file:
+            fileLines = file.readLines()
+
+            for line in fileLines:
+                if "registered" in line:
+                    configLines.append("registered = 1")
+                
+                else:
+                    configLines.append(line)
+        
+        with open("config.py","w") as writeFile:
+            writeFile.writelines(configLines)
+    
+    else: 
+        pass
+
 
 
 #method which takes in the message recieved and the topic it was called on to
