@@ -1,4 +1,3 @@
-from simple2 import MQTTClient
 import ubinascii
 from machine import Pin
 from machine import ADC
@@ -7,6 +6,100 @@ import APIUtils as Utils
 import time
 import config
 import functions
+from simple2 import MQTTClient
+
+#for callbacks, pins do not need to be instantiated before hand
+def switchCB(pinNum):
+    global pins
+    global client
+
+    #execute function
+    if IOlist[pinNum-1] == "O":
+
+        if pins[pinNum-1].value == 0:
+            pins[pinNum-1].on()
+
+        else:
+            pins[pinNum-1].off()
+        
+    else:
+        pins[pinNum-1] = machine.Pin(pinNum, machine.Pin.OUT, value = 1)
+        IOlist[pinNum-1] = "O"
+    
+    
+    #updatePinsFile
+    #updateBroker
+
+
+def ADC_CB(pinNum):
+    global pins
+    global client
+    
+    voltage = -1
+
+    if IOlist[pinNum-1] == "A":
+        value = pins[pinNum-1].read()
+        voltage = value/1023.0
+
+    else:
+        IOlist[pinNum-1] = "A"
+        pins[pinNum-1] = machine.ADC(pinNum)
+        value = pins[pinNum-1].read()
+        voltage = value/1023.0
+    
+    #update pinsFile
+    #update Broker
+
+
+def digitalReadCB(pinNum):
+    global pins
+    global client
+
+    value = -1
+
+    if IOlist[pinNum-1] == "I" or IOlist[pinNum-1] == "O": 
+        value = pins[pinNum-1].value()
+    
+    else:
+        pins[pinNum-1] = machine.Pin(pinNum, machine.Pin.IN)
+        value = pins[pinNum-1].value()
+    
+    #update pins file
+    #update broker
+
+
+def SPIReadCB(byteSize):
+    global SPISetup
+
+    functions.SPIRead(0,0,0,byteSize,SPISetup)
+
+    #update pins file
+    #update broker
+
+
+#assume pin is already initialized
+#redirect to callback above
+#is a workaround as you cannot have params in the timer callback
+def timerCB():
+    timerFunction(pins[config.pinCount])
+
+
+def interruptCB(pinNum):
+    global client
+    #at the moment notifies the DB but can be edited to interrupt function of users choice
+    #will run the updateDB method here
+    pass
+
+
+
+
+def getCallbackFunctions():
+    return {"switchCB": switchCB,
+            "ADC_CB": ADC_CB, 
+            "digitalReadCB": digitalReadCB,
+            "timerCB" : timerCB
+            }
+
 
 # Try to connect to Wifi - LED turns on and off
 Utils.connectToWifi(config.ssid,config.psk)
@@ -31,7 +124,7 @@ timerFunction = False       #stores the CB method for timer
 
 
 #timerValue in the form functionName for CB, pinNum
-if timerValue is not None:
+if len(timerValue) == 3:
     #must still map callback to pin and init pin
 
     timer, pinNum, func = functions.timedInterrupt(timerValue[1], timerValue[0], timerValue[2], timerCB)
@@ -52,7 +145,8 @@ def sub_cb(topic, msg, r, d):
 
     #switch function input param is the pin
     if topic == topics[0]:                  #switch
-        pinNum = int(str(msg))
+        print(msg)
+        pinNum = int(msg)
 
         if IOlist[pinNum-1] == "O":
             function(pins[pinNum-1])        #execute switch statement
@@ -144,95 +238,7 @@ def sub_cb(topic, msg, r, d):
     #update PinFile and Broker
 
 
-#for callbacks, pins do not need to be instantiated before hand
-def switchCB(pinNum):
-    global pins
-    global client
 
-    #execute function
-    if IOlist[pinNum-1] == "O":
-
-        if pins[pinNum-1].value == 0:
-            pins[pinNum-1].on()
-
-        else:
-            pins[pinNum-1].off()
-        
-    else:
-        pins[pinNum-1] = machine.Pin(pinNum, machine.Pin.OUT, value = 1)
-        IOlist[pinNum-1] = "O"
-    
-    
-    #updatePinsFile
-    #updateBroker
-
-
-def ADC_CB(pinNum):
-    global pins
-    global client
-    
-    voltage = -1
-
-    if IOlist[pinNum-1] == "A":
-        value = pins[pinNum-1].read()
-        voltage = value/1023.0
-
-    else:
-        IOlist[pinNum-1] = "A"
-        pins[pinNum-1] = machine.ADC(pinNum)
-        value = pins[pinNum-1].read()
-        voltage = value/1023.0
-    
-    #update pinsFile
-    #update Broker
-
-
-def digitalReadCB(pinNum):
-    global pins
-    global client
-
-    value = -1
-
-    if IOlist[pinNum-1] == "I" or IOlist[pinNum-1] == "O": 
-        value = pins[pinNum-1].value()
-    
-    else:
-        pins[pinNum-1] = machine.Pin(pinNum, machine.Pin.IN)
-        value = pins[pinNum-1].value()
-    
-    #update pins file
-    #update broker
-
-
-def SPIReadCB(byteSize):
-    global SPISetup
-
-    functions.SPIRead(0,0,0,byteSize,SPISetup)
-
-    #update pins file
-    #update broker
-
-
-#assume pin is already initialized
-#redirect to callback above
-#is a workaround as you cannot have params in the timer callback
-def timerCB():
-    timerFunction(pins[config.pinCount])
-
-
-def interruptCB(pinNum):
-    global client
-    #at the moment notifies the DB but can be edited to interrupt function of users choice
-    #will run the updateDB method here
-    pass
-
-
-def getCallbackFunctions():
-    return {"switchCB": switchCB,
-            "ADC_CB": ADC_CB, 
-            "digitalReadCB": digitalReadCB,
-            "timerCB" : timerCB
-            }
 
 
 
@@ -248,7 +254,7 @@ def main(server=broker):
     client.connect()
 
     #client.subscribe(TOPIC)
-    Utils.clientSubscribe(client)
+    Utils.clientSubscribe(client, config.deviceName)
     print("Subscribed")
 
     try: 

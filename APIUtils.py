@@ -96,7 +96,7 @@ def getResponseTopics():
 
 
 #client taken in is subscribed to all the API topics
-def clientSubscribe(client,deviceName):
+def clientSubscribe(client,deviceName = config.deviceName):
     #Subscribe to necessary topics to integrate use with API
     topics = getTopics(deviceName)
 
