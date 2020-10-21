@@ -86,6 +86,7 @@ def timerCB():
 
 def interruptCB(pinNum):
     global client
+    print("Button Pushed")
     #at the moment notifies the DB but can be edited to interrupt function of users choice
     #will run the updateDB method here
     pass
@@ -176,7 +177,9 @@ def sub_cb(topic, msg, r, d):
     #updateDB and pins.txt
 
     if topic == topics[2]:                  #listen
-        message = msg.split("_")
+        message = msg.decode('utf-8')
+        message = message.split("_")
+        print(message[0])
         pinNum = int(message[0])
 
         if IOlist[pinNum -1] == "I" or IOlist[pinNum-1] == "i":
@@ -193,7 +196,7 @@ def sub_cb(topic, msg, r, d):
 
 
     if topic == topics[3]:                  #digitalRead
-        pinNum = int(str(msg))
+        pinNum = int(msg)
         value = -1
 
         if IOlist[pinNum-1] == "I":
@@ -204,7 +207,8 @@ def sub_cb(topic, msg, r, d):
             pins[pinNum-1] = machine.Pin(pinNum, machine.Pin.IN)
             IOlist[pinNum -1] = "I"        
             value = function(pins[pinNum-1])
-
+            
+        print(value)                #TRACING
 
 
     if topic == topics[4]:                  #timedInterrupt add if message = deInit
