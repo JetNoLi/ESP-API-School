@@ -14,18 +14,25 @@ def switchCB(pinNum):
     global pins
     global client
 
+    #print(pinNum)
+    #print("in callback")
     #execute function
     if IOlist[pinNum-1] == "O":
+        print("IOlist O")
+        functions.switch(pins[pinNum-1])
 
-        if pins[pinNum-1].value == 0:
-            pins[pinNum-1].on()
+        #if pins[pinNum-1].value == 0:
+         #   pins[pinNum-1].on()
+          #  print("on")
 
-        else:
-            pins[pinNum-1].off()
-        
+
+       # if pins[pinNum-1].value == 1:
+        ##   print("off")
+    
     else:
         pins[pinNum-1] = machine.Pin(pinNum, machine.Pin.OUT, value = 1)
         IOlist[pinNum-1] = "O"
+        print("set")
     
     
     #updatePinsFile
@@ -81,8 +88,12 @@ def SPIReadCB(byteSize):
 #assume pin is already initialized
 #redirect to callback above
 #is a workaround as you cannot have params in the timer callback
-def timerCB():
+def timerCB(timer):
+    global pins
+    global timerFunction
+
     timerFunction(pins[config.pinCount])
+    print("function",timerFunction)
 
 
 def interruptCB(pinNum):
@@ -90,7 +101,7 @@ def interruptCB(pinNum):
     print("Button Pushed")
     #at the moment notifies the DB but can be edited to interrupt function of users choice
     #will run the updateDB method here
-    pass
+
 
 
 
@@ -128,7 +139,6 @@ timerFunction = False       #stores the CB method for timer
 #timerValue in the form functionName for CB, pinNum
 if timerValue is not None:
     #must still map callback to pin and init pin
-
     timer, pinNum, func = functions.timedInterrupt(timerValue[1], timerValue[0], timerValue[2], timerCB)
     pins[config.pinCount] = pinNum
     timerFunction = callbackMap[func]
@@ -219,12 +229,13 @@ def sub_cb(topic, msg, r, d):
             pinNum = int(message[0])
 
             timer, pinNum, func = function(pinNum, message[1], message[2], timerCB)
-
+            print(func)
+            print("pins length",len(pins))
             pins[config.pinCount] = pinNum
             timerFunction = callbackMap[func]
 
             #for pinWrite
-            pinNum = config.pinCount + 1
+            pinNum = config.pinCount
 
         else:                               #deinit the timer
             if msg == "endTimer":
@@ -249,7 +260,7 @@ def sub_cb(topic, msg, r, d):
         msg = msg.split("_")
 
     Utils.writeToPinFile(pinNum,Utils.getPinLine(msg,topic,topics,str(value)))
-    Utils.updateDB(client,msg,str(value), topic, topics)
+    Utils.updateDB(client,str(msg),str(value), topic, topics)
 
 
 

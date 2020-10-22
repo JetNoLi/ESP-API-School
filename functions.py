@@ -42,8 +42,7 @@ def switch(pin):
 #params is params to pass into function
 def timedInterrupt(pinNum, function, time, timerFunction):
     timer = Timer(-1)           #initialize with ID of -1 as in docs
-
-    timer.init(mode = Timer.PERIODIC, period = time, callback = timerFunction)
+    timer.init(mode = Timer.PERIODIC, period = int(time), callback = timerFunction)
 
     return timer, pinNum, function
 

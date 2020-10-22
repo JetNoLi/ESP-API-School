@@ -114,7 +114,7 @@ def genPinFile():
     with open("pins.txt","w") as pinFile:
 
         for i in range(config.pinCount + 1):    #account for timer
-            pinFile.write("")                   #note "-" indicates an unitialized pin
+            pinFile.write("")                   #note "" indicates an unitialized pin
             pinFile.write("\n")
 
 
@@ -137,10 +137,10 @@ def getPinList():
         count = 0                               #index in pinList 0-17         
 
         for pinData in pinRead:
-            #print(count)
+            print(count)
     
             if count == config.pinCount:        #on Timer
-                if pinData == "":
+                if pinData == "" or pinData == "\n":
                     pins.append("")             #stores pin num to link to the timer
 
                 else:
@@ -265,6 +265,7 @@ def getPinLine(message, topic, topics, value):
 
         #timedInterrupt - pin, function, time, defualt value
         elif topic == topics[4]:
+            print("here")
             function = message[1]
             time = message[2]
             pinLine = function + "_" + pinNum + "_" + time
@@ -286,7 +287,7 @@ def getPinLine(message, topic, topics, value):
             pinLine = "digitalRead"
 
     pinLine += "\n"
-    print(pinLine)
+    print("pinline = ",pinLine)
     return pinLine       
 
 
