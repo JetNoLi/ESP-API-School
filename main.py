@@ -1,4 +1,4 @@
-import test
+#import test
 import ubinascii
 from machine import Pin
 from machine import ADC
@@ -126,7 +126,7 @@ timerFunction = False       #stores the CB method for timer
 
 
 #timerValue in the form functionName for CB, pinNum
-if len(timerValue) == 3:
+if timerValue is not None:
     #must still map callback to pin and init pin
 
     timer, pinNum, func = functions.timedInterrupt(timerValue[1], timerValue[0], timerValue[2], timerCB)
@@ -182,7 +182,7 @@ def sub_cb(topic, msg, r, d):
     #updateDB and pins.txt
 
     if topic == topics[2]:                  #listen
-        message = message.split("_")
+        message = msg.split("_")
         pinNum = int(message[0])
 
         if IOlist[pinNum -1] == "I" or IOlist[pinNum-1] == "i":
@@ -245,9 +245,11 @@ def sub_cb(topic, msg, r, d):
             message = msg.split("_")
             function(int(message[0]),int(message[1]), int(message[2]), message[3],SPISetup)
     
+    if "_" in msg:
+        msg = msg.split("_")
 
-    Utils.writeToPinFile(pinNum,Utils.getPinLine(message,topic,topics,value))
-    Utils.updateBroker(client,message,value, topic, topics)
+    Utils.writeToPinFile(pinNum,Utils.getPinLine(msg,topic,topics,str(value)))
+    Utils.updateDB(client,msg,str(value), topic, topics)
 
 
 
@@ -266,12 +268,17 @@ def main(server=broker):
     Utils.registerDevice(client)    
 
     #Subscribe to automatically generated topics for deviceName
-    Utils.clientSubscribe(client, config.deviceName)
+    Utils.clientSubscribe(client)
     print("Subscribed")
 
     try: 
         while True:
-            client.wait_msg()
+            try:
+                client.wait_msg()
+
+            finally:
+                print("message Failed")
+
         
     finally:
         client.disconnect()

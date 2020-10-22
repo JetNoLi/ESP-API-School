@@ -98,9 +98,9 @@ def getResponseTopics():
 
 
 #client taken in is subscribed to all the API topics
-def clientSubscribe(client,deviceName = config.deviceName):
+def clientSubscribe(client):
     #Subscribe to necessary topics to integrate use with API
-    topics = getTopics(deviceName)
+    topics = getTopics(config.deviceName)
 
     for topic in topics:
         client.subscribe(topic)
@@ -137,6 +137,7 @@ def getPinList():
         count = 0                               #index in pinList 0-17         
 
         for pinData in pinRead:
+            #print(count)
     
             if count == config.pinCount:        #on Timer
                 if pinData == "":
@@ -146,14 +147,13 @@ def getPinList():
                     pinData = pinData.split("_")
                     timer = pinData
 
-            elif (count + 1) in config.SPIPins: #if an SPI Pin
+            if (count + 1) == config.SPIPins[-1]: #if an SPI Pin
                 IOlist.append("")
                 pins.append("")
 
-                if (count + 1) == config.SPIPins[-1]:
-                    if "_" in pinData:
-                        pinData = pinData.split("_")
-                        SPISetup = functions.SetupSPI(int(pinData[0]),int(pinData[1]), int(pinData[2]))
+                if "_" in pinData:
+                    pinData = pinData.split("_")
+                    SPISetup = functions.SetupSPI(int(pinData[0]),int(pinData[1]), int(pinData[2]))
 
 
             elif pinData == "" or pinData == "\n":                 #unitialized pin
@@ -194,7 +194,8 @@ def getPinList():
                         IOlist.append("O")
 
                     else:           #interruput
-                        pin = Pin(count + 1, Pin.In)
+                        
+                        pin = Pin(count + 1, Pin.IN)
 
                         #so if this doesnt trigger
                         #will return an interrupt list of input pins, ready to be handled
@@ -239,7 +240,8 @@ def writeToPinFile(pin,pinLine):
                 pinLines.append(pinRead[i])
 
     with open("pins.txt","w") as pinFile:
-        pinFile.writelines(pinLines)            
+        for line in pinLines:
+            pinFile.write(line)          
 
 
 
@@ -248,7 +250,7 @@ def getPinLine(message, topic, topics, value):
     pinLine = ""
 
     if "_" in message:          #listen or timer or SPIRead
-        message = message.split("_")
+        #message = message.split("_")
         pinNum = message[0]
         
         #listen - pin, edge, callback
@@ -271,18 +273,20 @@ def getPinLine(message, topic, topics, value):
         pinNum = message    #switch,ADC or digitalRead
 
         #switch
-        if topic == str(topics[0]):     #convert to string as topic may be in bytes format
+        if topic == topics[0]:     #convert to string as topic may be in bytes format
             #get pin value
             pinLine = "switch_" + str(value)
         
         #ADC
-        if topic == str(topics[1]):
+        if topic == topics[1]:
             pinLine = "ADC"
         
         #digitalRead
-        if topic == str(topics[1]):
+        if topic == topics[3]:
             pinLine = "digitalRead"
 
+    pinLine += "\n"
+    print(pinLine)
     return pinLine       
 
 
@@ -299,10 +303,10 @@ def registerDevice(client):
     #update registered varaible in config file if device unregistered
     if config.registered == 0:
         client.publish(b"registerDevice",bytes(config.deviceName,'UTF-8'))
-
+        print("published")
         configLines = []
         with open("config.py","r") as file:
-            fileLines = file.readLines()
+            fileLines = file.readlines()
 
             for line in fileLines:
                 if "registered" in line:
@@ -312,10 +316,11 @@ def registerDevice(client):
                     configLines.append(line)
         
         with open("config.py","w") as writeFile:
-            writeFile.writelines(configLines)
+            for line in configLines:
+                writeFile.write(line)
     
     else: 
-        pass
+        print("Already Registered")
 
 
 
