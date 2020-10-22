@@ -18,21 +18,11 @@ def switchCB(pinNum):
     #print("in callback")
     #execute function
     if IOlist[pinNum-1] == "O":
-        print("IOlist O")
         functions.switch(pins[pinNum-1])
 
-        #if pins[pinNum-1].value == 0:
-         #   pins[pinNum-1].on()
-          #  print("on")
-
-
-       # if pins[pinNum-1].value == 1:
-        ##   print("off")
-    
     else:
         pins[pinNum-1] = machine.Pin(pinNum, machine.Pin.OUT, value = 1)
         IOlist[pinNum-1] = "O"
-        print("set")
     
     
     #updatePinsFile
@@ -145,7 +135,7 @@ if timerValue is not None:
 
 
 #THIS IS WHAT HAPPENS WHEN STATE CHANGES CHANGE HERE TO IMPLEMENT FUNCTIONALITY
-def sub_cb(topic, msg, r, d):
+def sub_cb(topic, msg):       #r, d
     global pins
     global IOlist
     global client
@@ -260,7 +250,7 @@ def sub_cb(topic, msg, r, d):
         msg = msg.split("_")
 
     Utils.writeToPinFile(pinNum,Utils.getPinLine(msg,topic,topics,str(value)))
-    Utils.updateDB(client,str(msg),str(value), topic, topics)
+    Utils.updateDB(client,msg,str(value), topic, topics)
 
 
 

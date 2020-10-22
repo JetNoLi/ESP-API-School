@@ -216,6 +216,7 @@ def getPinList():
 
             count += 1
 
+    len(pins)
     return pins, IOlist, timer, SPISetup
     
                 
@@ -249,7 +250,7 @@ def writeToPinFile(pin,pinLine):
 def getPinLine(message, topic, topics, value):
     pinLine = ""
 
-    if "_" in message:          #listen or timer or SPIRead
+    if  type(message) == type(topics):          #listen or timer or SPIRead
         #message = message.split("_")
         pinNum = message[0]
         
@@ -340,6 +341,7 @@ def updateDB(client, message, value,topic, topics):
     
     if topic == topics[2]:          #listen
         #message = pinNum, edge, listenCB | note value = edge
+        print(message[0])
         updateMessage = config.deviceName + "_listen_" + message[0] + "_" + message[1]
     
     if topic == topics[3]:          #digitalRead
