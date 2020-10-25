@@ -152,6 +152,8 @@ def getPinList():
                 else:
                     pinData = pinData.split("_")
                     timer = pinData
+                    pins.append("t")
+                    IOlist.append("t")
 
 
             elif pinData == "u":                 #unitialized pin
@@ -228,7 +230,7 @@ def getPinList():
 
             count += 1
 
-    #len(pins)
+    print(pins)
     return pins, IOlist, timer, SPISetup
     
                 
@@ -298,6 +300,10 @@ def getPinLine(message, topic, topics, value):
         #digitalRead
         if topic == topics[3]:
             pinLine = "digitalRead"
+
+        #timer deinit
+        if topic == topics[4]:
+            pinLine = "u"
 
     pinLine += "\n"
     print("pinline = ",pinLine)
@@ -370,10 +376,10 @@ def updateDB(client, message, value,topic, topics):
     
     if topic == topics[5]:
         if "_" not in message:                   
-            updateMessage = config.deviceName + "_SPIRead_" + message + value
+            updateMessage = config.deviceName + "_SPIRead_" + str(config.SPIPins[0]) + value
         
         else:
-            updateMessage = config.deviceName + "_SPIRead_" + message[0] + value
+            updateMessage = config.deviceName + "_SPIRead_" + str(config.SPIPins[0]) + value
             
     client.publish(b"updateDB", bytes(updateMessage,'UTF-8'))
 

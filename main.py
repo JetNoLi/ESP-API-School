@@ -17,19 +17,31 @@ def switchCB(pinNum):
     global pins
     global client
 
-    #print(pinNum)
-    #print("in callback")
-    #execute function
+    value = -1
     if IOlist[pinNum-1] == "O":
         functions.switch(pins[pinNum-1])
+        value = pins[pinNum -1].value()
 
     else:
         pins[pinNum-1] = machine.Pin(pinNum, machine.Pin.OUT, value = 1)
         IOlist[pinNum-1] = "O"
-    
+        value = 1
     
     #updatePinsFile
     #updateBroker
+    message = config.deviceName + "_switch_" + str(pinNum) + "_" + str(value)
+    pinLine = "swtitch_" + str(value)
+
+    Utils.writeToPinFile(pinNum,pinLine + "\n")
+
+    if client is not None:
+        client.publish(b"updateDB", bytes(message, 'utf-8'))
+
+    else:
+        clientMock = MQTTClient(config.CLIENT_ID, config.brokerIP)
+        clientMock.connect()
+        clientMock.publish(b"updateDB",bytes(message,'utf-8'))
+    
 
 
 def ADC_CB(pinNum):
@@ -50,6 +62,19 @@ def ADC_CB(pinNum):
     
     #update pinsFile
     #update Broker
+    message = config.deviceName + "_ADC_" + str(pinNum) + "_" + str(voltage)
+    pinLine = "ADC" + "\n"
+
+    Utils.writeToPinFile(pinNum,pinLine)
+
+    if client is not None:
+        client.publish(b"updateDB", bytes(message, 'utf-8'))
+
+    else:
+        clientMock = MQTTClient(config.CLIENT_ID, config.brokerIP)
+        clientMock.connect()
+        clientMock.publish(b"updateDB",bytes(message,'utf-8'))
+    
 
 
 def digitalReadCB(pinNum):
@@ -67,15 +92,41 @@ def digitalReadCB(pinNum):
     
     #update pins file
     #update broker
+    message = config.deviceName + "digitalRead_" + str(pinNum) + "_" + str(value)
+    pinLine = "digitalRead" + "\n"
 
+    Utils.writeToPinFile(pinNum,pinLine)
 
+    if client is not None:
+        client.publish(b"updateDB", bytes(message, 'utf-8'))
+
+    else:
+        clientMock = MQTTClient(config.CLIENT_ID, config.brokerIP)
+        clientMock.connect()
+        clientMock.publish(b"updateDB",bytes(message,'utf-8'))
+    
+
+#SPISetup will be setup already in the pinRead
+#Note must have SPI configured to read from it with a timer
+#will add functionality in sub_cb
 def SPIReadCB(byteSize):
     global SPISetup
 
-    functions.SPIRead(0,0,0,byteSize,SPISetup)
+    value = functions.SPIRead(0,0,0,byteSize,SPISetup)
 
-    #update pins file
+    #update pins file not necessary as SPI setup call will trigger pin file write
     #update broker
+    message = config.deviceName + "_SPIRead_" + str(config.SPIPins[0]) + "_" + str(value)
+
+    if client is not None:
+        client.publish(b"updateDB", bytes(message, 'utf-8'))
+
+    else:
+        clientMock = MQTTClient(config.CLIENT_ID, config.brokerIP)
+        clientMock.connect()
+        clientMock.publish(b"updateDB",bytes(message,'utf-8'))
+    
+
 
 
 #assume pin is already initialized
@@ -142,8 +193,9 @@ timerFunction = False       #stores the CB method for timer
 #timerValue in the form functionName for CB, pinNum
 if timerValue is not None:
     #must still map callback to pin and init pin
+    print(pins)
     timer, pinNum, func = functions.timedInterrupt(timerValue[1], timerValue[0], timerValue[2], timerCB)
-    pins[config.pinCount] = pinNum
+    pins[config.pinCount] = int(pinNum)
     timerFunction = callbackMap[func]
 
 
@@ -239,7 +291,7 @@ def sub_cb(topic, msg):       #r, d
                 timerFunction = callbackMap[func]
 
                 #for pinWrite
-                pinNum = config.pinCount
+                pinNum = config.pinCount + 1
 
             else:                               #deinit the timer
                 if msg == "endTimer":
