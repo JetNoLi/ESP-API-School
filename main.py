@@ -9,6 +9,9 @@ import config
 import functions
 from simple2 import MQTTClient
 
+#stores client to allow to publish from subscriber callbacks
+global client
+
 #for callbacks, pins do not need to be instantiated before hand
 def switchCB(pinNum):
     global pins
@@ -86,10 +89,22 @@ def timerCB(timer):
     print("function",timerFunction)
 
 
+#currently configured to send a message to another user with ESP device
+#can be configured to whatever the user needs
 def interruptCB(pinNum):
     global client
     print("Button Pushed")
-    client.publish(b"updateDB",b"PooPoo_switch_5_1")
+    topic = b"updateDB"
+    message = b"Poo_Pooswitch_5_1"
+
+    if client == None:
+        #print("error: client not yet initialized")
+        clientMock = MQTTClient(config.CLIENT_ID, config.brokerIP)
+        clientMock.connect()
+        clientMock.publish(topic,message)
+    
+    else:
+        client.publish(topic,message)
     #at the moment notifies the DB but can be edited to interrupt function of users choice
     #will run the updateDB method here
 
@@ -110,7 +125,6 @@ Utils.connectToWifi(config.ssid,config.psk)
 broker = config.brokerIP
 CLIENT_ID = ubinascii.hexlify(machine.unique_id())
 
-#stores client to allow to publish from subscriber callbacks
 client = None
 
 #to match topic to API call
