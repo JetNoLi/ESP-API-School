@@ -95,8 +95,3 @@ def SPIRead(baudRate, CPOL, CPHA, byteSize, SPISetup):
         SPISetup = SetupSPI(baudRate,CPOL,CPHA)
     
     return SPIReadValue(int(byteSize),SPISetup)
-
-
-       
-    
-

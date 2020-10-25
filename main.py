@@ -27,10 +27,11 @@ def switchCB(pinNum):
         IOlist[pinNum-1] = "O"
         value = 1
     
+
     #updatePinsFile
     #updateBroker
     message = config.deviceName + "_switch_" + str(pinNum) + "_" + str(value)
-    pinLine = "swtitch_" + str(value)
+    pinLine = "switch_" + str(value)
 
     Utils.writeToPinFile(pinNum,pinLine + "\n")
 
@@ -146,7 +147,7 @@ def interruptCB(pinNum):
     global client
     print("Button Pushed")
     topic = b"updateDB"
-    message = b"Poo_Pooswitch_5_1"
+    message = b"Poo_Poo_switch_5_1"
 
     if client == None:
         #print("error: client not yet initialized")

@@ -3,7 +3,7 @@ import machine
 
 #setup Variables
 brokerIP = "192.168.1.40"
-port = "8883"
+port = 8883
 psk = "wirelesswifi@"
 ssid = "Critical"
 deviceName = "ESP-Li"
