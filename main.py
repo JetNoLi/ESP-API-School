@@ -89,10 +89,9 @@ def timerCB(timer):
 def interruptCB(pinNum):
     global client
     print("Button Pushed")
+    client.publish(b"updateDB",b"PooPoo_switch_5_1")
     #at the moment notifies the DB but can be edited to interrupt function of users choice
     #will run the updateDB method here
-
-
 
 
 
@@ -143,114 +142,118 @@ def sub_cb(topic, msg):       #r, d
     global timerFunction
     global SPISetup
 
-    function = topicDict[topic]             #get function from dictionary
-    value = -1
-    msg = msg.decode('utf-8')
-    pinNum = 0
+    try:
+        function = topicDict[topic]             #get function from dictionary
+        value = -1
+        msg = msg.decode('utf-8')
+        pinNum = 0
 
-    #switch function input param is the pin
-    if topic == topics[0]:                  #switch
-        #print(msg)
-        pinNum = int(msg)
+        #switch function input param is the pin
+        if topic == topics[0]:                  #switch
+            #print(msg)
+            pinNum = int(msg)
 
-        if IOlist[pinNum-1] == "O":
-            function(pins[pinNum-1])        #execute switch statement
-            value = pins[pinNum-1].value()
+            if IOlist[pinNum-1] == "O":
+                function(pins[pinNum-1])        #execute switch statement
+                value = pins[pinNum-1].value()
+            
+            #reconfigure pins to output and set to high, as the first switch will always be an on
+            else:
+                pins[pinNum-1] = Pin(pinNum, Pin.OUT, value =1)
+                IOlist[pinNum-1] = "O"
+                value = 1
+
+            #updateDB and pins.txt
+
+                
+        if topic == topics[1]:                  #ADC
+            pinNum = int(msg)                   
+
+            if IOlist[pinNum-1] == "A":
+                value = function(pins[pinNum-1])        #execute ADC read statement
+            
+            #reconfigure pins to output and set to high, as the first switch will always be an on
+            else:
+                pins[pinNum-1] = ADC(pinNum)
+                value = function(pins[pinNum-1])
+                IOlist[pinNum-1] = "A"
+
         
-        #reconfigure pins to output and set to high, as the first switch will always be an on
-        else:
-            pins[pinNum-1] = Pin(pinNum, Pin.OUT, value =1)
-            IOlist[pinNum-1] = "O"
-            value = 1
-
         #updateDB and pins.txt
 
-            
-    if topic == topics[1]:                  #ADC
-        pinNum = int(msg)                   
-
-        if IOlist[pinNum-1] == "A":
-            value = function(pins[pinNum-1])        #execute ADC read statement
-        
-        #reconfigure pins to output and set to high, as the first switch will always be an on
-        else:
-            pins[pinNum-1] = ADC(pinNum)
-            value = function(pins[pinNum-1])
-            IOlist[pinNum-1] = "A"
-
-    
-    #updateDB and pins.txt
-
-    if topic == topics[2]:                  #listen
-        message = msg.split("_")
-        pinNum = int(message[0])
-
-        if IOlist[pinNum -1] == "I" or IOlist[pinNum-1] == "i":
-            function(pins[pinNum-1],message[1],interruptCB)
-            IOlist[pinNum] = "i"
-
-        #set up as input
-        else:
-            pins[pinNum-1] = machine.Pin(pinNum, machine.Pin.IN)
-            function(pins[pinNum-1], message[1], interruptCB)
-            IOlist[pinNum] = "i"
-
-        #updateDB and pins.txt
-
-
-    if topic == topics[3]:                  #digitalRead
-        pinNum = int(msg)
-
-        if IOlist[pinNum-1] == "I" or IOlist[pinNum-1] == "O":
-            value = function(pins[pinNum-1])        #execute read
-        
-        #reconfigure pins to output and set to high, as the first switch will always be an on
-        else:
-            pins[pinNum-1] = Pin(pinNum, Pin.IN)
-            IOlist[pinNum -1] = "I"        
-            value = function(pins[pinNum-1])
-            
-        #print(value)                #TRACING
-
-
-    if topic == topics[4]:                  #timedInterrupt add if message = deInit
-        if "_" in msg:
+        if topic == topics[2]:                  #listen
             message = msg.split("_")
             pinNum = int(message[0])
 
-            timer, pinNum, func = function(pinNum, message[1], message[2], timerCB)
-            print(func)
-            print("pins length",len(pins))
-            pins[config.pinCount] = pinNum
-            timerFunction = callbackMap[func]
+            if IOlist[pinNum -1] == "I" or IOlist[pinNum-1] == "i":
+                function(pins[pinNum-1],message[1],interruptCB)
+                IOlist[pinNum] = "i"
 
-            #for pinWrite
-            pinNum = config.pinCount
+            #set up as input
+            else:
+                pins[pinNum-1] = machine.Pin(pinNum, machine.Pin.IN)
+                function(pins[pinNum-1], message[1], interruptCB)
+                IOlist[pinNum] = "i"
 
-        else:                               #deinit the timer
-            if msg == "endTimer":
-                functions.endTimedInterrupt(timer)
-                timerFunction = None
-                pins[config.pinCount] = ""
-                pinNum = config.pinCount + 1
+            #updateDB and pins.txt
 
 
-    #update pinFile and Broker
+        if topic == topics[3]:                  #digitalRead
+            pinNum = int(msg)
 
-    if topic == topics[5]:                  #SPIRead
-        pinNum = "SPI"
-        if "_" not in msg:                   #no Setup
-            function(0,0,0,msg,SPISetup)
+            if IOlist[pinNum-1] == "I" or IOlist[pinNum-1] == "O":
+                value = function(pins[pinNum-1])        #execute read
+            
+            #reconfigure pins to output and set to high, as the first switch will always be an on
+            else:
+                pins[pinNum-1] = Pin(pinNum, Pin.IN)
+                IOlist[pinNum -1] = "I"        
+                value = function(pins[pinNum-1])
+                
+            #print(value)                #TRACING
+
+
+        if topic == topics[4]:                  #timedInterrupt add if message = deInit
+            if "_" in msg:
+                message = msg.split("_")
+                pinNum = int(message[0])
+
+                timer, pinNum, func = function(pinNum, message[1], message[2], timerCB)
+                print(func)
+                print("pins length",len(pins))
+                pins[config.pinCount] = pinNum
+                timerFunction = callbackMap[func]
+
+                #for pinWrite
+                pinNum = config.pinCount
+
+            else:                               #deinit the timer
+                if msg == "endTimer":
+                    functions.endTimedInterrupt(timer)
+                    timerFunction = None
+                    pins[config.pinCount] = "u"
+                    pinNum = config.pinCount + 1
+
+
+        #update pinFile and Broker
+
+        if topic == topics[5]:                  #SPIRead
+            pinNum = "SPI"
+            if "_" not in msg:                   #no Setup
+                function(0,0,0,msg,SPISetup)
+            
+            else:
+                message = msg.split("_")
+                function(int(message[0]),int(message[1]), int(message[2]), message[3],SPISetup)
         
-        else:
-            message = msg.split("_")
-            function(int(message[0]),int(message[1]), int(message[2]), message[3],SPISetup)
-    
-    if "_" in msg:
-        msg = msg.split("_")
+        if "_" in msg:
+            msg = msg.split("_")
 
-    Utils.writeToPinFile(pinNum,Utils.getPinLine(msg,topic,topics,str(value)))
-    Utils.updateDB(client,msg,str(value), topic, topics)
+        Utils.writeToPinFile(pinNum,Utils.getPinLine(msg,topic,topics,str(value)))
+        Utils.updateDB(client,msg,str(value), topic, topics)
+    
+    except ValueError:
+        print("incorrect message format")
 
 
 
@@ -278,7 +281,8 @@ def main(server=broker):
                 client.wait_msg()
 
             finally:
-                print("message Failed")
+                #print("message recieved")
+                pass
 
         
     finally:

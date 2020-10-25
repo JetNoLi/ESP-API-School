@@ -114,7 +114,7 @@ def genPinFile():
     with open("pins.txt","w") as pinFile:
 
         for i in range(config.pinCount + 1):    #account for timer
-            pinFile.write("")                   #note "" indicates an unitialized pin
+            pinFile.write("u")                   #note "" indicates an unitialized pin
             pinFile.write("\n")
 
 
@@ -138,27 +138,32 @@ def getPinList():
 
         for pinData in pinRead:
             print(count)
+            print(pinData)
     
             if count == config.pinCount:        #on Timer
-                if pinData == "" or pinData == "\n":
-                    pins.append("")             #stores pin num to link to the timer
+                if pinData == "u":
+                    pins.append("u")             #stores pin num to link to the timer
+                    IOlist.append("u")
+                
+                elif pinData.strip("\n") == "u":
+                    pins.append("u")
+                    IOlist.append("u")
 
                 else:
                     pinData = pinData.split("_")
                     timer = pinData
 
-            if (count + 1) == config.SPIPins[-1]: #if an SPI Pin
-                IOlist.append("")
-                pins.append("")
 
-                if "_" in pinData:
-                    pinData = pinData.split("_")
-                    SPISetup = functions.SetupSPI(int(pinData[0]),int(pinData[1]), int(pinData[2]))
+            elif pinData == "u":                 #unitialized pin
+                pins.append("u")
+                IOlist.append("u")
+                print("no newline")
 
+            elif pinData.strip("\n") == "u":
+                pins.append("u")
+                IOlist.append("u")
+                print("newline")
 
-            elif pinData == "" or pinData == "\n":                 #unitialized pin
-                pins.append("")
-                IOlist.append("")
 
             elif pinData in functionList:       #is ADC or digitalRead
                 pin = machine.Pin(count + 1,machine.Pin.IN)     #pinNum = index + 1
@@ -178,7 +183,7 @@ def getPinList():
             #could be a listen call in which case schedule interrupt on pin
             
             else:
-                from main import interruptCB
+                from main import interruptCB                    #Find workaround for Ed's code
                 if "_" in pinData:
                     pinData = pinData.split("_")                 #functionName_param1_param2...value
 
@@ -192,6 +197,13 @@ def getPinList():
                         pin = Pin(count + 1, Pin.OUT, value = int(pinData[1]))                #count + 1 -> pinNum
                         pins.append(pin)
                         IOlist.append("O")
+                    
+                    elif pinData[0] == "SPI": #if an SPI Pin
+                        IOlist.append("SPI")
+                        pins.append("SPI")
+
+                        pinData = pinData.split("_")
+                        SPISetup = functions.SetupSPI(int(pinData[1]),int(pinData[2]), int(pinData[3]))
 
                     else:           #interruput
                         
@@ -209,14 +221,14 @@ def getPinList():
                             pin.irq(trigger = Pin.IRQ_FALLING, handler = interruptCB)
 
                         else:
-                            pin.irq(trigger = Pin.IRQ_RISNING | Pin.IRQ_FALLING, handler =interruptCB)
+                            pin.irq(trigger = Pin.IRQ_RISING | Pin.IRQ_FALLING, handler =interruptCB)
                     
                         pins.append(pin)
                         IOlist.append("i")
 
             count += 1
 
-    len(pins)
+    #len(pins)
     return pins, IOlist, timer, SPISetup
     
                 
@@ -262,7 +274,7 @@ def getPinLine(message, topic, topics, value):
         
         #SPIRead - baudRate, CPOL, CPHA
         elif topic == topics[5]:
-            pinLine = "SPIRead_" + message[0] + "_" + message[1] + "_" + message[2] 
+            pinLine = "SPI_" + message[0] + "_" + message[1] + "_" + message[2] 
 
         #timedInterrupt - pin, function, time, defualt value
         elif topic == topics[4]:
