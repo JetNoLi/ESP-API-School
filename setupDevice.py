@@ -20,10 +20,10 @@ pinCount = input("Number of Pins on ESP : ")
 pins = int(pinCount)
 pinCount = "pinCount = " + pinCount + "\n"
 
-SPIpins = input("Enter your 3 SPI pins seperated by a space: ")
+SPIpins = input("Enter your 4 SPI pins seperated by a space: ")
 SPIpins = SPIpins.split(" ")
 
-SPIpins = "SPIPins = [" + SPIpins[0] + "," + SPIpins[1] + "," + SPIpins[2] + "]\n"
+SPIpins = "SPIPins = [" + SPIpins[0] + "," + SPIpins[1] + "," + SPIpins[2] + "," + SPIpins[3] +"]\n"
 
 imports = ["import ubinascii\n","import machine\n"]
 ClientID = "CLIENT_ID = ubinascii.hexlify(machine.unique_id())\n"

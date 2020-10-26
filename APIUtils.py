@@ -230,7 +230,7 @@ def getPinList():
 
             count += 1
 
-    print(pins)
+    #len(pins)
     return pins, IOlist, timer, SPISetup
     
                 
