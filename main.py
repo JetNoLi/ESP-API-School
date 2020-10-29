@@ -14,6 +14,13 @@ global client
 
 #for callbacks, pins do not need to be instantiated before hand
 def switchCB(pinNum):
+    '''
+    Switch callback function to toggle pin, will also update the DB and pinFile as necessary
+
+    param pinNum: pin number of the pin to toggle
+    pinNum type: int
+    '''
+
     global pins
     global client
 
@@ -46,6 +53,12 @@ def switchCB(pinNum):
 
 
 def ADC_CB(pinNum):
+    '''
+    Callback function to make an ADC read on the specified pin, updates the pin file and DB
+
+    param pinNum: pin number of the pin to read from
+    type pinNum: int
+    '''
     global pins
     global client
     
@@ -79,6 +92,12 @@ def ADC_CB(pinNum):
 
 
 def digitalReadCB(pinNum):
+    '''
+    Callback to read high or low from a pin, will update the DB and pin File
+
+    param pinNum: pin number of the pin to read from
+    type pinNum: int
+    '''
     global pins
     global client
 
@@ -109,8 +128,13 @@ def digitalReadCB(pinNum):
 
 #SPISetup will be setup already in the pinRead
 #Note must have SPI configured to read from it with a timer
-#will add functionality in sub_cb
 def SPIReadCB(byteSize):
+    ''' 
+    Function to read from SPI pins within a callback, updates the DB
+
+    param byteSize: number of bytes to read from SPI pins
+    type byteSize: int
+    '''
     global SPISetup
 
     value = functions.SPIRead(0,0,0,byteSize,SPISetup)
@@ -134,6 +158,12 @@ def SPIReadCB(byteSize):
 #redirect to callback above
 #is a workaround as you cannot have params in the timer callback
 def timerCB(timer):
+    '''
+    Defualt timer callback which reroutes to the correct callback everytime scheduled task takes place
+
+    param timer: timer variable, is assigned on default
+    type timer: TImer
+    '''
     global pins
     global timerFunction
 
@@ -144,10 +174,16 @@ def timerCB(timer):
 #currently configured to send a message to another user with ESP device
 #can be configured to whatever the user needs
 def interruptCB(pinNum):
+    '''
+    Callback which is called when the interrupt is schedule, currently just updates the db, but can be configured by user
+
+    param pinNum: pin number of the pin on which the interrupt was called on, assigned by default
+    type pinNum: int
+    '''
     global client
     print("Button Pushed")
     topic = b"updateDB"
-    message = b"Poo_Poo_switch_5_1"
+    message = b"Edson-ESP1_switch_13_1"
 
     if client == None:
         #print("error: client not yet initialized")
@@ -163,6 +199,12 @@ def interruptCB(pinNum):
 
 
 def getCallbackFunctions():
+    ''' 
+    Get the dictionary which maps callback functions to their function
+
+    return: dictionary which maps callback functions to their function
+    rtype: dictionary
+    '''
     return {"switchCB": switchCB,
             "ADC_CB": ADC_CB, 
             "digitalReadCB": digitalReadCB,
@@ -194,7 +236,7 @@ timerFunction = False       #stores the CB method for timer
 #timerValue in the form functionName for CB, pinNum
 if timerValue is not None:
     #must still map callback to pin and init pin
-    print(pins)
+    #print(pins)
     timer, pinNum, func = functions.timedInterrupt(timerValue[1], timerValue[0], timerValue[2], timerCB)
     pins[config.pinCount] = int(pinNum)
     timerFunction = callbackMap[func]
@@ -202,6 +244,14 @@ if timerValue is not None:
 
 #THIS IS WHAT HAPPENS WHEN STATE CHANGES CHANGE HERE TO IMPLEMENT FUNCTIONALITY
 def sub_cb(topic, msg):       #r, d
+    '''
+    Handles recieving messages, calling the correct function and updating the DB and pins file
+
+    param topic: topic on which message was sent
+    type topics: bytes
+    param msg: message which was recieved
+    type msg: bytes
+    ''' 
     global pins
     global IOlist
     global client

@@ -6,10 +6,17 @@ from machine import SPI
 from machine import Timer
 from machine import ADC
 import config
-#from main import interruptCB
+
 
 def connectToWifi(ssid, psk):
+    '''
+    Connects to the WiFi ssid, using the psk
 
+    param ssid: The ssid of the WiFi network to connect to
+    type ssid: str
+    param psk: The psk of the WiFi network to connect to
+    type psk: str
+    '''
     wlan = network.WLAN(network.STA_IF)         #create station mode
     wlan.active(True)                           #activate
     
@@ -21,18 +28,33 @@ def connectToWifi(ssid, psk):
         while not wlan.isconnected():
             pass                                #wait until connection is established
     
-    print("Connected to", ssid)
 
 
 
 #List of the names of the functions in API
 def getFunctionNames():
+    '''
+    Used to get a list of function names from the functions.py file
+    
+    return: a list of function names from functions
+    rtype: list
+    '''
     return ["switch", "ADC", "listen", "digitalRead","timedInterrupt", "SPIRead"]
 
 
 
-#returns the list of topics associated with the given deviceName
+
 def getTopics(deviceName):  
+    '''
+    Returns the list of topics associated with the given deviceName
+
+    param deviceName: Unique name given to the device by the user
+    type deviceName: string
+
+    return: list of topics associated with deviceName
+    rtype: list
+    '''
+    
     functionNames = getFunctionNames()
 
     topics = []
@@ -45,6 +67,12 @@ def getTopics(deviceName):
 
 
 def getFunctionMapDict():
+    '''
+    Get the dictionary which maps function names to functions
+
+    return: a dictionary which maps function names to functions
+    rtype: dictionary
+    '''
     return {"switch": functions.switch,
             "ADC": functions.ADC,
             "listen" : functions.listen,
@@ -56,6 +84,15 @@ def getFunctionMapDict():
 
 #get dictionary which maps topics to function
 def getTopicDict(deviceName):
+    '''
+    Get a dictionary which maps topic names to functions
+
+    param deviceName: The name of the device to get topics for
+    type param: string
+
+    return: a dictionary which maps topic names to functions
+    rtype: dictionary
+    '''
     topics = getTopics(deviceName)
 
     topicDict = {
@@ -71,9 +108,17 @@ def getTopicDict(deviceName):
 
 
 
-#tells us if a function is an input or output function
+
 def isInput(functionName):
-    #index < 2 -> output, else input
+    '''
+    Tells us if the given functionName is an input or output function
+
+    param functionName: function to check if input or output
+    type functionName: string
+
+    return: True if input, False if output
+    rtype: boolean
+    '''
     functionNames = getFunctionNames()
     
     index = functionNames.index(functionName)       #find position
@@ -88,6 +133,12 @@ def isInput(functionName):
 
 #returns response topics already formated as bytes
 def getResponseTopics():
+    '''
+    Get a list of topics to respond to the broker with
+
+    return: a list of response topics
+    rtype: list
+    '''
     response = [b"addToDB"]           
     
     topic = "updateDB" + "_" + config.deviceName       #updateDB_deviceName
@@ -97,9 +148,14 @@ def getResponseTopics():
     return response
 
 
-#client taken in is subscribed to all the API topics
+
 def clientSubscribe(client):
-    #Subscribe to necessary topics to integrate use with API
+    '''
+    Subscribe to necessary topics to integrate use with API functions
+
+    param client: MQTT client in main which handles sending and recieving messages
+    type client: Client
+    '''
     topics = getTopics(config.deviceName)
 
     for topic in topics:
@@ -119,11 +175,20 @@ def genPinFile():
 
 
 
-#returns an array of pins (type Pin) and an IOlist which maps index to input output
-#also returns a timer if their is one
-#initalizes them according to the pins.txt file
-#note we pass in the topicsDict instead of recreating it to save memory 
+
 def getPinList():
+    '''
+    Get the setup variables from reading the pinFile, pins, IOlist, timer, SPISetup
+
+    return: a list of pins (type Pin) containing pin config from pin file
+    rtype: list
+    return: the input output list for the pins from the pin config from pin file
+    rype: list
+    return: data to create a timer from main. Is None if pin config has no timer
+    rtype: Timer
+    return: instance of the SPI class for the hardware SPI pins. Is None if pin config says no SPI setup
+    rtype: SPI
+    '''
     pins = []        #return list for pins 
     
     IOlist = []      #A = ADC, I = input, i = interrupt, O = output                           
@@ -137,8 +202,8 @@ def getPinList():
         count = 0                               #index in pinList 0-17         
 
         for pinData in pinRead:
-            print(count)
-            print(pinData)
+            #print(count)
+            #print(pinData)
     
             if count == config.pinCount:        #on Timer
                 if pinData == "u":
@@ -159,16 +224,16 @@ def getPinList():
             elif pinData == "u":                 #unitialized pin
                 pins.append("u")
                 IOlist.append("u")
-                print("no newline")
+                #print("no newline")
 
             elif pinData.strip("\n") == "u":
                 pins.append("u")
                 IOlist.append("u")
-                print("newline")
+                #print("newline")
 
 
             elif pinData in functionList:       #is ADC or digitalRead
-                pin = machine.Pin(count + 1,machine.Pin.IN)     #pinNum = index + 1
+                pin = Pin(count + 1,Pin.IN)     #pinNum = index + 1
 
                 if pinData == "ADC":
                     pin = machine.ADC(count+1)
@@ -235,8 +300,15 @@ def getPinList():
     
                 
 
-#given pin and string to write to file, will adjust line in pinFile accordingly to allow accurate startup
 def writeToPinFile(pin,pinLine):
+    '''
+    given pin and string to write to file, will adjust line in pinFile accordingly to allow accurate startup
+
+    param pin: pin number of the pin which is being changed, note pinCount + 1 = Timer line
+    type pin: int
+    param pinLine: line to write to pins.txt i.e.the pin file
+    type pinLine: string
+    '''
     pinLines = []
 
     #read from file and edit lines
@@ -260,8 +332,23 @@ def writeToPinFile(pin,pinLine):
 
 
 
-#given the message and topic will generate the string to update the pinFile with i.e. pinLine
+
 def getPinLine(message, topic, topics, value):
+    '''
+    Will generate the string to update the pinFile with i.e. pinLine
+
+    param message: message recieved by MQTT client
+    type message: string
+    param topic: topic of the message recieved by the MQTT client
+    type topic: string
+    param topics: list of topics associated with the device
+    type topics: list
+    param value: value to add to pinLine if necessary, else enter -1
+    type value: int
+
+    return: get the pineLine to write to the pin file
+    rtype: string
+    '''
     pinLine = ""
 
     if  type(message) == type(topics):          #listen or timer or SPIRead
@@ -311,16 +398,29 @@ def getPinLine(message, topic, topics, value):
 
 
 
-#takes in byte value from sensor
-#is the callback method to format SPI data to what you would like
+
 def formatSPIBytes(byteArray):
+    '''
+    Is the callback method to format SPI data to what you would like
+    
+    param byteArray: byte array taken in from reading the sensor
+    paramType: list
+
+    return: decoded sensor value
+    rtype: string
+    '''
     pass
 
 
-#when a device is first used it will need to register with thebroker
+
 def registerDevice(client):
-    #register device to Broker i.e. send device name to Pi
-    #update registered varaible in config file if device unregistered
+    '''
+    register device to Broker i.e. send device name to Pi
+    update registered varaible in config file if device unregistered
+
+    param client: MQTT client in main which is used to handle sending MQTT messages
+    type client: Client
+    '''
     if config.registered == 0:
         client.publish(b"registerDevice",bytes(config.deviceName,'UTF-8'))
         print("published")
@@ -344,9 +444,22 @@ def registerDevice(client):
 
 
 
-#method which takes in the message recieved and the topic it was called on to
 #returns the topic and the message to send to the broker
 def updateDB(client, message, value,topic, topics):
+    '''
+    Generates the response message to send to update the Broker so it can update the Database
+
+    param client: MQTT client in main which is used to handle sending MQTT messages
+    type client: Client
+    param message: message recieved by MQTT client
+    type message: string
+    param value: value to add to updateDB with.
+    type value: string
+    param topic: topic of the message recieved by the MQTT client
+    type topic: string
+    param topics: list of topics associated with the device
+    type topics: list
+    '''
     updateMessage = ""
 
     if topic == topics[0]:          #switch
